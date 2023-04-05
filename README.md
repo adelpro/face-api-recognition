@@ -1,2 +1,3 @@
-# face-api-detection
-Face detection using Face-api.js and vanilla JavaScript
+# face-api-recognition
+
+Face Recognition system from live video, using vanilla JavaScript and Face-api.js
