@@ -36,8 +36,9 @@ function playVideo() {
 video.addEventListener("play", async () => {
   console.log("The video is starting to play.");
   console.log("Loading the faces from the database");
-  const labeledFaceDescriptors = await loadFacesDescriptions();
+  const labeledFaceDescriptors = await loadLabeledFaceDescriptors();
   console.log("The faces have been loaded successfully.");
+  console.log({ labeledFaceDescriptors });
   const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors);
   // Creating the canvas
   const canvas = faceapi.createCanvasFromMedia(video);
@@ -66,7 +67,7 @@ video.addEventListener("play", async () => {
   }, 10000);
 });
 
-async function loadFacesDescriptions() {
+async function loadLabeledFaceDescriptors() {
   const faces = [
     {
       id: 1,
@@ -78,11 +79,12 @@ async function loadFacesDescriptions() {
       ],
     },
     {
-      id: 1,
+      id: 2,
       label: "mohamed",
       images: ["./faces/mohamed/1.jpg", "./faces/mohamed/2.jpg"],
     },
   ];
+  const results = [];
   for (const face of faces) {
     const descriptions = [];
     for (let i = 1; i <= face.images.length; i++) {
@@ -99,15 +101,15 @@ async function loadFacesDescriptions() {
       }
       descriptions.push(detections.descriptor);
     }
-    return new faceapi.LabeledFaceDescriptors(face.label, descriptions);
+    const result = new faceapi.LabeledFaceDescriptors(face.label, descriptions);
+    results.push(result);
   }
+  return results;
 }
 // Drawing our detections above the video
 function detectionsDraw(canvas, faceMatcher, DetectionsArray) {
-  console.log(DetectionsArray);
   DetectionsArray.forEach((detection) => {
     const faceMatch = faceMatcher.findBestMatch(detection.descriptor);
-    console.log(faceMatch?.label, "detected");
     const box = detection.detection.box;
     const drawOptions = {
       label: faceMatch.toString(),
