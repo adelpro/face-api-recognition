@@ -6,8 +6,8 @@ Promise.all([
   faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URI),
   faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URI),
 ])
+  .then(console.log("All models are loaded."))
   .then(playVideo)
-  .then(faceRecognition)
   .catch((err) => {
     console.log(err);
   });
@@ -32,57 +32,89 @@ function playVideo() {
       console.log(err);
     });
 }
-const loadFacesDescpritions = async () => {
-  const labesl = ["adel"];
-  faces.forEach(async (label) => {
+
+video.addEventListener("play", async () => {
+  console.log("The video is starting to play.");
+  console.log("Loading the faces from the database");
+  const labeledFaceDescriptors = await loadFacesDescriptions();
+  console.log("The faces have been loaded successfully.");
+  const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors);
+  // Creating the canvas
+  const canvas = faceapi.createCanvasFromMedia(video);
+
+  // This will force the use of a software (instead of hardware accelerated)
+  // Enable only for low configurations
+  canvas.willReadFrequently = true;
+
+  videoContainer.appendChild(canvas);
+
+  // Resizing the canvas to cover the video element
+  const canvasSize = { width: video.width, height: video.height };
+  faceapi.matchDimensions(canvas, canvasSize);
+
+  setInterval(async () => {
+    const detections = await faceapi
+      .detectAllFaces(video)
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+
+    // Set detections size to the canvas size
+    const detectionsArray = faceapi.resizeResults(detections, canvasSize);
+    canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
+
+    detectionsDraw(canvas, faceMatcher, detectionsArray);
+  }, 10000);
+});
+
+async function loadFacesDescriptions() {
+  const faces = [
+    {
+      id: 1,
+      label: "adel",
+      images: [
+        "./faces/adel/1.jpg",
+        "./faces/adel/2.jpg",
+        "./faces/adel/3.jpg",
+      ],
+    },
+    {
+      id: 1,
+      label: "mohamed",
+      images: ["./faces/mohamed/1.jpg", "./faces/mohamed/2.jpg"],
+    },
+  ];
+  for (const face of faces) {
     const descriptions = [];
-    for (i = 1; i <= 2; i++) {
-      const image = await faceapi.fetchImage(`./faces/${face}/${i}.png`);
+    for (let i = 1; i <= face.images.length; i++) {
+      const img = await faceapi.fetchImage(face.images[i - 1]);
       const detections = await faceapi
-        .detectSingleFace(image)
+        .detectSingleFace(img)
         .withFaceLandmarks()
         .withFaceDescriptor();
+      if (!detections) {
+        console.log(
+          `No face detected in ${face.label + ": " + face.images[i]}`
+        );
+        continue;
+      }
       descriptions.push(detections.descriptor);
-      return new faceapi.LabeledFaceDescriptors(label, descriptions);
     }
-  });
-};
-
-const faceRecognition = async () => {
-  const labeledFaceDescriptors = await loadFacesDescpritions();
-  const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors);
-  video.addEventListener("play", () => {
-    // Creating the canvas
-    const canvas = faceapi.createCanvasFromMedia(video);
-
-    // This will force the use of a software (instead of hardware accelerated)
-    // Enable only for low configurations
-    canvas.willReadFrequently = true;
-    videoContainer.appendChild(canvas);
-
-    // Resizing the canvas to cover the video element
-    const canvasSize = { width: video.width, height: video.height };
-    faceapi.matchDimensions(canvas, canvasSize);
-
-    setInterval(async () => {
-      const detections = await faceapi
-        .detectAllFaces(video)
-        .withFaceLandmarks()
-        .withfaceDescriptor();
-
-      // Set detections size to the canvas size
-      const detectionsArray = faceapi.resizeResults(detections, canvasSize);
-      canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-      detectionsDraw(canvas, detectionsArray);
-    }, 100);
-  });
-};
-
+    return new faceapi.LabeledFaceDescriptors(face.label, descriptions);
+  }
+}
 // Drawing our detections above the video
-function detectionsDraw(canvas, DetectionsArray) {
-  DetectionsArray.forEach((face) => {
-    const box = faceMatcher.findBestMatch(face.descriptor);
-    const drawBox = new faceapi.draw.DrawBox(box, { label, face });
+function detectionsDraw(canvas, faceMatcher, DetectionsArray) {
+  console.log(DetectionsArray);
+  DetectionsArray.forEach((detection) => {
+    const faceMatch = faceMatcher.findBestMatch(detection.descriptor);
+    console.log(faceMatch?.label, "detected");
+    const box = detection.detection.box;
+    const drawOptions = {
+      label: faceMatch.toString(),
+      lineWidth: 2,
+      boxColor: "#FF0015",
+    };
+    const drawBox = new faceapi.draw.DrawBox(box, drawOptions);
     drawBox.draw(canvas);
   });
 }
