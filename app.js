@@ -109,10 +109,10 @@ async function loadLabeledFaceDescriptors() {
 // Drawing our detections above the video
 function detectionsDraw(canvas, faceMatcher, DetectionsArray) {
   DetectionsArray.forEach((detection) => {
-    const faceMatch = faceMatcher.findBestMatch(detection.descriptor);
+    const faceMatches = faceMatcher.findBestMatch(detection.descriptor);
     const box = detection.detection.box;
     const drawOptions = {
-      label: faceMatch.toString(),
+      label: faceMatches .label,
       lineWidth: 2,
       boxColor: "#FF0015",
     };
