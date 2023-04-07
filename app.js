@@ -76,6 +76,7 @@ async function loadLabeledFaceDescriptors() {
         "./faces/adel/1.jpg",
         "./faces/adel/2.jpg",
         "./faces/adel/3.jpg",
+        "./faces/adel/4.jpg",
       ],
     },
     {
@@ -87,8 +88,9 @@ async function loadLabeledFaceDescriptors() {
   const results = [];
   for (const face of faces) {
     const descriptions = [];
-    for (let i = 1; i <= face.images.length; i++) {
-      const img = await faceapi.fetchImage(face.images[i - 1]);
+    for (let i = 0; i < face.images.length; i++) {
+      const img = await faceapi.fetchImage(face.images[i]);
+      console.log(`Processing image: ${face.images[i]}`);
       const detections = await faceapi
         .detectSingleFace(img)
         .withFaceLandmarks()
@@ -110,9 +112,10 @@ async function loadLabeledFaceDescriptors() {
 function detectionsDraw(canvas, faceMatcher, DetectionsArray) {
   DetectionsArray.forEach((detection) => {
     const faceMatch = faceMatcher.findBestMatch(detection.descriptor);
+    console.log({ faceMatch });
     const box = detection.detection.box;
     const drawOptions = {
-      label: faceMatch.toString(),
+      label: faceMatch.label,
       lineWidth: 2,
       boxColor: "#FF0015",
     };
