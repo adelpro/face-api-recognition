@@ -1,12 +1,14 @@
 const video = document.getElementById("video");
 const videoContainer = document.getElementById("video-container");
+const logs = document.getElementById("logs");
 const MODEL_URI = "/models";
+log("Start loading the models");
 Promise.all([
   faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URI),
   faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URI),
   faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URI),
 ])
-  .then(console.log("All models are loaded."))
+  .then(log("All models have been loaded."))
   .then(playVideo)
   .catch((err) => {
     console.log(err);
@@ -34,11 +36,10 @@ function playVideo() {
 }
 
 video.addEventListener("play", async () => {
-  console.log("The video is starting to play.");
-  console.log("Loading the faces from the database");
+  log("The video is starting to play.");
+  log("Loading the faces from the database");
   const labeledFaceDescriptors = await loadLabeledFaceDescriptors();
-  console.log("The faces have been loaded successfully.");
-  console.log({ labeledFaceDescriptors });
+  log("All faces have been loaded");
   const faceMatcher = new faceapi.FaceMatcher(labeledFaceDescriptors);
   // Creating the canvas
   const canvas = faceapi.createCanvasFromMedia(video);
@@ -52,7 +53,7 @@ video.addEventListener("play", async () => {
   // Resizing the canvas to cover the video element
   const canvasSize = { width: video.width, height: video.height };
   faceapi.matchDimensions(canvas, canvasSize);
-
+  log("Done.");
   setInterval(async () => {
     const detections = await faceapi
       .detectAllFaces(video)
@@ -71,13 +72,8 @@ async function loadLabeledFaceDescriptors() {
   const faces = [
     {
       id: 1,
-      label: "adel",
-      images: [
-        "./faces/adel/1.jpg",
-        "./faces/adel/2.jpg",
-        "./faces/adel/3.jpg",
-        "./faces/adel/4.jpg",
-      ],
+      label: "mahrez",
+      images: ["./faces/mahrez/1.jpg", "./faces/mahrez/2.jpg"],
     },
     {
       id: 2,
@@ -90,15 +86,14 @@ async function loadLabeledFaceDescriptors() {
     const descriptions = [];
     for (let i = 0; i < face.images.length; i++) {
       const img = await faceapi.fetchImage(face.images[i]);
-      console.log(`Processing image: ${face.images[i]}`);
+      log(`Processing image: ${face.images[i]}`);
+
       const detections = await faceapi
         .detectSingleFace(img)
         .withFaceLandmarks()
         .withFaceDescriptor();
       if (!detections) {
-        console.log(
-          `No face detected in ${face.label + ": " + face.images[i]}`
-        );
+        log(`No face detected in ${face.label + ": " + face.images[i]}`);
         continue;
       }
       descriptions.push(detections.descriptor);
@@ -112,7 +107,6 @@ async function loadLabeledFaceDescriptors() {
 function detectionsDraw(canvas, faceMatcher, DetectionsArray) {
   DetectionsArray.forEach((detection) => {
     const faceMatch = faceMatcher.findBestMatch(detection.descriptor);
-    console.log({ faceMatch });
     const box = detection.detection.box;
     const drawOptions = {
       label: faceMatch.label,
@@ -122,4 +116,12 @@ function detectionsDraw(canvas, faceMatcher, DetectionsArray) {
     const drawBox = new faceapi.draw.DrawBox(box, drawOptions);
     drawBox.draw(canvas);
   });
+}
+function log(msg) {
+  const message = document.createTextNode(msg);
+  const li = document.createElement("li");
+  li.appendChild(message);
+  logs.appendChild(li);
+  // Scroll down
+  logs.scrollTop = logs.scrollHeight;
 }

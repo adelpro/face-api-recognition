@@ -12,6 +12,27 @@
   position: relative;
 }
 
+.logs {
+  width: 500px;
+  border: 1px solid black;
+  background-color: #cccc;
+  margin-bottom: 30px;
+  height: 200px;
+  overflow-y: scroll;
+}
+
+.logs li {
+  width: 100%;
+  text-align: left;
+  list-style: none;
+  padding: 0;
+}
+
+.logs li:before {
+  content: "\2192";
+  margin-right: 10px;
+}
+
 canvas {
   position: absolute;
   top: 0;
